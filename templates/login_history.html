@@ -20,7 +20,19 @@
                     </div>
                     <button type="submit" class="btn form-control btn-default">Login</button>
                 </form>
-                <p id='result'>{{ data }}</p>
+                <table>
+                    {% for row in data %}
+                      <tr>
+                      {% set rowloop = loop %}
+                        <td id="login{{ loop.index }}">{{ row.id }}</td>
+                        <td id="username">{{ row.username }}</td>
+                        <td id="login{{ loop.index }}_time">{{ row.login_time }}</td>
+                        <td id="logout{{ loop.index }}_time">{{ row.logout_time }}</td>
+
+
+                      </tr>
+                    {% endfor %}
+                </table>
             </div>
         </div>
     </div>

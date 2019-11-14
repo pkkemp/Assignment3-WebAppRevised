@@ -29,10 +29,8 @@ class LoginHistoryTable(Table):
     }
     id = Col('id', td_html_attrs=thisdict)
     username = Col('Username')
-    login_time = Col('Login Time', td_html_attrs=logindict)
+    login_time = Col('Login Time', td_html_attrs={"id" : "login_time"})
     logout_time = Col('Logout Time', td_html_attrs=logoutdict)
-
-
 
 class user:
   def __init__(self, username, password, twofactor):
@@ -53,7 +51,7 @@ class response:
         self.response = response
 
 class LoginHistory(db.Model):
-    id=db.Column(db.String(), primary_key=True)
+    id=db.Column(db.Integer(), primary_key=True)
     username = db.Column(db.String(), nullable=False)
     login_time = db.Column(db.TIMESTAMP(120), unique=False, nullable=False)
     logout_time = db.Column(db.TIMESTAMP(120), unique=False, nullable=False)
@@ -63,7 +61,7 @@ class LoginHistory(db.Model):
 
 
 class Users(db.Model):
-    username = db.Column(db.String(80), primary_key=True, unique=True, nullable=False)
+    username = db.Column(db.String(), primary_key=True, unique=True)
     password = db.Column(db.String(120), unique=False, nullable=False)
     twofactor = db.Column(db.String(80), unique=False, nullable=False)
 
@@ -108,8 +106,7 @@ def createUser(user_name, pword, twofact):
         return False
 
 def logLogin(user_name):
-    id = str(uuid.uuid1())
-    event = LoginHistory(id=id, username=user_name, login_time=datetime.datetime.now())
+    event = LoginHistory(username=user_name, login_time=datetime.datetime.now())
     db.session.add(event)
     db.session.commit()
 
@@ -147,7 +144,7 @@ def history():
         history = LoginHistory.query.all()
         # Populate the table
         table = LoginHistoryTable(history)
-        r = make_response(render_template("login_history.html", data=table))
+        r = make_response(render_template("login_history.html", data=history))
         r.headers.set('Content-Security-Policy', "default-src 'self'")
         return r
     r = make_response(render_template("login_history.html"))
