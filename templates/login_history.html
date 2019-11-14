@@ -27,9 +27,13 @@
                         <td id="login{{ loop.index }}">{{ row.id }}</td>
                         <td id="username">{{ row.username }}</td>
                         <td id="login{{ loop.index }}_time">{{ row.login_time }}</td>
-                        <td id="logout{{ loop.index }}_time">{{ row.logout_time }}</td>
-
-
+                        <td id="logout{{ loop.index }}_time">
+                            {% if row.logout_time == None %}
+                            N/A
+                            {% else %}
+                            {{ row.logout_time }}
+                            {% endif %}
+                        </td>
                       </tr>
                     {% endfor %}
                 </table>

@@ -3,6 +3,7 @@ from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from flask_table import Table, Col
 import datetime
+import flask_login
 import uuid
 
 
@@ -12,6 +13,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sqlite/webapp.db'
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
+login_manager = flask_login.LoginManager()
+login_manager.init_app(app)
 userList = []
 session = False
 SECRET_KEY = os.urandom(32)
@@ -68,16 +71,42 @@ class Users(db.Model):
     def __repr__(self):
         return '<User %r>' % self.username
 
+class User(flask_login.UserMixin):
+    pass
+
+
+@login_manager.user_loader
+def user_loader(username):
+    if findUser(username) == None:
+        return
+
+    user = User()
+    user.id = username
+    return user
+
+@login_manager.request_loader
+def request_loader(request):
+    username = request.form.get('uname')
+    password = request.form.get('pword')
+    twofactor = request.form.get('2fa')
+
+    theUser = findUser(username)
+
+    if theUser is not None:
+        user = User()
+        user.id = username
+        if theUser.password == password and theUser.twofactor == twofactor:
+            logLogin(username)
+            return user
+        return
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
 @app.route("/spell_check", methods=["GET", "POST"])
+@flask_login.login_required
 def spell_check():
-    if session == False:
-        return redirect(url_for("login"))
-    else:
         data = response
         if request.method == "POST":
             inputtext = request.form["inputtext"]
@@ -110,28 +139,14 @@ def logLogin(user_name):
     db.session.add(event)
     db.session.commit()
 
-def loginUser(user_name, pword, twofact):
-    theUser = findUser(user_name)
-    if theUser is not None:
-        if theUser.password == pword and theUser.twofactor == twofact:
-            global session
-            session = True
-            logLogin(user_name)
-            return True
-        else:
-            return False
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     data = ""
     if request.method == "POST":
-        uname = request.form["uname"]
-        pword = request.form["pword"]
-        twofact = request.form["2fa"]
-        theUser = findUser(uname)
-        if loginUser(uname, pword, twofact):
-            global session
-            session = True
+        user = request_loader(request)
+        if user is not None:
             data = "success"
     r = make_response(render_template("login.html", data = data))
     r.headers.set('Content-Security-Policy', "default-src 'self'")
