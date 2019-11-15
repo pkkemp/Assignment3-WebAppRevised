@@ -4,10 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_table import Table, Col
 from flask import Flask, Response, redirect, url_for, request, session, abort
 import datetime
-from flask_login import LoginManager, UserMixin, \
-    login_required, login_user, current_user, logout_user
 import uuid
-
+from flask_login import LoginManager, UserMixin, login_required, login_user, current_user
 
 import unittest, os
 
@@ -35,6 +33,7 @@ class LoginHistoryTable(Table):
     username = Col('Username')
     login_time = Col('Login Time', td_html_attrs={"id" : "login_time"})
     logout_time = Col('Logout Time', td_html_attrs=logoutdict)
+
 
 class user:
   def __init__(self, username, password, twofactor):
@@ -64,15 +63,14 @@ class LoginHistory(db.Model):
         return '<User %r>' % self.username
 
 class QueryHistory(db.Model):
-    queryid = db.Column(db.Integer(), primary_key=True)
-    userid = db.Column(db.String(), nullable=False)
-    query = db.Column(db.String(), unique=False, nullable=False)
-    result = db.Column(db.String(), unique=False, nullable=False)
+    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
+    userid = db.Column(db.Integer(), nullable=False)
+    input = db.Column(db.String())
+    result = db.Column(db.String())
+
 
     def __repr__(self):
         return '<User %r>' % self.username
-
-
 
 
 class Users(db.Model):
@@ -133,7 +131,7 @@ def findUser(user_name):
 
 def createUser(user_name, pword, twofact):
     if findUser(user_name) is None:
-        user = Users(id="",username=user_name, password=pword, twofactor=twofact)
+        user = Users(username=user_name, password=pword, twofactor=twofact)
         db.session.add(user)
         db.session.commit()
         return True
@@ -146,7 +144,7 @@ def logLogin(user_name):
     db.session.commit()
 
 def logQuery(userId, query, response):
-    event = QueryHistory(userid=userId, query=query, response=response)
+    event = QueryHistory(userid=userId, input=query, result=response)
     db.session.add(event)
     db.session.commit()
 
@@ -168,18 +166,25 @@ def login():
     return r
 
 @app.route("/login_history", methods=["GET", "POST"])
-def history():
+def login_history():
     if request.method == "POST":
         # Or, more likely, load items from your database with something like
         history = LoginHistory.query.all()
-        # Populate the table
-        table = LoginHistoryTable(history)
         r = make_response(render_template("login_history.html", data=history))
         r.headers.set('Content-Security-Policy', "default-src 'self'")
         return r
     r = make_response(render_template("login_history.html"))
     r.headers.set('Content-Security-Policy', "default-src 'self'")
     return r
+
+
+@app.route("/history", methods=["GET", "POST"])
+@login_required
+def query_history():
+        history = QueryHistory.query.filter_by(userid=current_user.id)
+        # Populate the table
+        r = make_response(render_template("history.html", data=history))
+        return r
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -201,6 +206,8 @@ def register():
     r.headers.set('Content-Security-Policy', "default-src 'self'")
     return r
 
+
+
 @app.route("/spell_check", methods=["GET", "POST"])
 @login_required
 def spell_check():
@@ -211,8 +218,9 @@ def spell_check():
             inputtext = request.form["inputtext"]
             data.input = inputtext
             from subprocess import call
-            call(["./a.out"])
-            logQuery(currentUserId, inputtext, data)
+            #output = call(["./a.out"])
+            output = ""
+            logQuery(currentUserId, inputtext, output)
             r = make_response(render_template("spell_check.html", data = data))
             r.headers.set('Content-Security-Policy', "default-src 'self'")
             return r

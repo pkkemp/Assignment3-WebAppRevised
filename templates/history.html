@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Login | Flask</title>
+</head>
+<body>
+    <div class="container">
+        <div class="row" style="margin-top: 40px">
+            <div class="col-sm-6">
+                <form method="POST">
+                    <div class="form-group">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    </div>
+                    <div class="form-group">
+                      <label for="email">Username : </label>
+                      <input type="text" name="uname" class="form-control" id="uname">
+                    </div>
+                    <button type="submit" class="btn form-control btn-default">Login</button>
+                </form>
+                <table>
+                    {% for row in data %}
+                      <tr>
+                      {% set rowloop = loop %}
+                        <td id="login{{ loop.index }}">{{ row.id }}</td>
+                        <td id="username">{{ row.userid }}</td>
+                        <td id="login{{ loop.index }}_time">{{ row.input }}</td>
+                        <td id="logout{{ loop.index }}_time">{{ row.result }}</td>
+                      </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
