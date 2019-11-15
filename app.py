@@ -2,8 +2,10 @@ from flask import Flask, render_template, flash, redirect, url_for, session, log
 from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from flask_table import Table, Col
+from flask import Flask, Response, redirect, url_for, request, session, abort
 import datetime
-import flask_login
+from flask_login import LoginManager, UserMixin, \
+    login_required, login_user, current_user, logout_user
 import uuid
 
 
@@ -13,10 +15,9 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sqlite/webapp.db'
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
-login_manager = flask_login.LoginManager()
+login_manager = LoginManager()
+login_manager.login_view = "login"
 login_manager.init_app(app)
-userList = []
-session = False
 SECRET_KEY = os.urandom(32)
 app.config['SECRET_KEY'] = SECRET_KEY
 
@@ -62,26 +63,43 @@ class LoginHistory(db.Model):
     def __repr__(self):
         return '<User %r>' % self.username
 
-
-class Users(db.Model):
-    username = db.Column(db.String(), primary_key=True, unique=True)
-    password = db.Column(db.String(120), unique=False, nullable=False)
-    twofactor = db.Column(db.String(80), unique=False, nullable=False)
+class QueryHistory(db.Model):
+    queryid = db.Column(db.Integer(), primary_key=True)
+    userid = db.Column(db.String(), nullable=False)
+    query = db.Column(db.String(), unique=False, nullable=False)
+    result = db.Column(db.String(), unique=False, nullable=False)
 
     def __repr__(self):
         return '<User %r>' % self.username
 
-class User(flask_login.UserMixin):
+
+
+
+class Users(db.Model):
+    username = db.Column(db.String(), unique=True, primary_key=True)
+    password = db.Column(db.String(120), unique=False, nullable=False)
+    twofactor = db.Column(db.String(80), unique=False, nullable=False)
+    userid = db.Column(db.Integer(), unique=True)
+
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+class User(UserMixin):
     pass
 
+def getUserId(username):
+    return Users.query.filter_by(username=username).first().userid
+
+def getUserPassword(username):
+    return Users.query.filter_by(username=username).first().password
+
+def getUserTwoFactor(username):
+    return Users.query.filter_by(username=username).first().twofactor
 
 @login_manager.user_loader
-def user_loader(username):
-    if findUser(username) == None:
-        return
-
+def load_user(userid):
     user = User()
-    user.id = username
+    user.id = userid
     return user
 
 @login_manager.request_loader
@@ -94,7 +112,8 @@ def request_loader(request):
 
     if theUser is not None:
         user = User()
-        user.id = username
+        user.id = getUserId(username)
+        user.username = username
         if theUser.password == password and theUser.twofactor == twofactor:
             logLogin(username)
             return user
@@ -104,23 +123,10 @@ def request_loader(request):
 def index():
     return render_template("index.html")
 
-@app.route("/spell_check", methods=["GET", "POST"])
-@flask_login.login_required
-def spell_check():
-        data = response
-        if request.method == "POST":
-            inputtext = request.form["inputtext"]
-            data.input = inputtext
-            from subprocess import call
-            call(["./a.out"])
-
-            r = make_response(render_template("spell_check.html", data = data))
-            r.headers.set('Content-Security-Policy', "default-src 'self'")
-            return r
-        r = make_response(render_template("spell_check.html", data=data))
-        r.headers.set('Content-Security-Policy', "default-src 'self'")
-        return r
-
+@app.route('/test')
+@login_required
+def home():
+    return Response("Hello World!")
 
 def findUser(user_name):
     return Users.query.filter_by(username=user_name).first()
@@ -139,17 +145,26 @@ def logLogin(user_name):
     db.session.add(event)
     db.session.commit()
 
-
+def logQuery(userId, query, response):
+    event = QueryHistory(userid=userId, query=query, response=response)
+    db.session.add(event)
+    db.session.commit()
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     data = ""
-    if request.method == "POST":
-        user = request_loader(request)
-        if user is not None:
+    if request.method == 'POST':
+        username = request.form['uname']
+        password = request.form['pword']
+        twofact  = request.form['2fa']
+        if password == getUserPassword(username) and twofact == getUserTwoFactor(username):
+            id = getUserId(username)
+            user = User()
+            user.id = id
+            login_user(user)
             data = "success"
+#            return redirect(request.args.get("next"))
     r = make_response(render_template("login.html", data = data))
-    r.headers.set('Content-Security-Policy', "default-src 'self'")
     return r
 
 @app.route("/login_history", methods=["GET", "POST"])
@@ -185,6 +200,25 @@ def register():
     r = make_response(render_template("register.html"))
     r.headers.set('Content-Security-Policy', "default-src 'self'")
     return r
+
+@app.route("/spell_check", methods=["GET", "POST"])
+@login_required
+def spell_check():
+        data = response
+        if request.method == "POST":
+            currentUser = current_user
+            currentUserId = currentUser.id
+            inputtext = request.form["inputtext"]
+            data.input = inputtext
+            from subprocess import call
+            call(["./a.out"])
+            logQuery(currentUserId, inputtext, data)
+            r = make_response(render_template("spell_check.html", data = data))
+            r.headers.set('Content-Security-Policy', "default-src 'self'")
+            return r
+        r = make_response(render_template("spell_check.html", data=data))
+        r.headers.set('Content-Security-Policy', "default-src 'self'")
+        return r
 
 
 if __name__ == "__main__":
