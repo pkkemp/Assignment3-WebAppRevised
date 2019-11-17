@@ -23,7 +23,7 @@
                     </div>
                     <div class="form-group">
                       <label for="email">Username : </label>
-                      <input type="text" name="uname" class="form-control" id="uname">
+                      <input type="text" name="uname" class="form-control" id="userquery">
                     </div>
                     <button type="submit" class="btn form-control btn-default">Login</button>
                 </form>
@@ -34,10 +34,7 @@
                             {% for row in data.history %}
 								<tr>
                                     {% set rowloop = loop %}
-                                    <td id="query{{ loop.index }}"><a href="/query{{ row.id }}">{{ row.id }}</a></td>
-                                    <td id="username">{{ row.userid }}</td>
-                                    <td id="login{{ loop.index }}_time">{{ row.input }}</td>
-                                    <td id="logout{{ loop.index }}_time">{{ row.result }}</td>
+                                    <td id="query{{ loop.index }}"><a href="/history/query{{ row.id }}">{{ row.id }}</a></td>
 								</tr>
                             {% endfor %}
 						</table>

@@ -132,7 +132,8 @@ def request_loader(request):
 def index():
     return render_template("index.html")
 
-@app.route('/query<some_place>')
+@app.route('/history/query<some_place>')
+@login_required
 def querySpecific(some_place):
 #    return(HTML_TEMPLATE.substitute(place_name=some_place))
 #     r = make_response(render_template("login.html"))
@@ -140,6 +141,8 @@ def querySpecific(some_place):
     input = ""
     result = ""
     data = {}
+    app.logger.info(getUsername(current_user.id))
+    print(getUsername(current_user.id))
     if current_user.id == "10":
         info = QueryHistory.query.all()
     else:
@@ -226,6 +229,8 @@ def login_history():
 @app.route("/history", methods=["GET", "POST"])
 @login_required
 def query_history():
+    print(getUsername(current_user.id))
+    app.logger.info(getUsername(current_user.id))
     if request.method == "POST":
         if current_user.id == "10":
             uname = request.form['uname']
