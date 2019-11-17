@@ -34,7 +34,7 @@
                             {% for row in data %}
 								<tr>
                                     {% set rowloop = loop %}
-									<td id="query{{ loop.index }}">{{ row.id }}</td>
+                                    <td id="query{{ loop.index }}"><a href="/query{{ row.id }}">{{ row.id }}</a></td>
                                     <td id="username">{{ row.userid }}</td>
                                     <td id="login{{ loop.index }}_time">{{ row.input }}</td>
                                     <td id="logout{{ loop.index }}_time">{{ row.result }}</td>

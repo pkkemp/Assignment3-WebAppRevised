@@ -130,10 +130,10 @@ def querySpecific(some_place):
 #     return r
     info = QueryHistory.query.filter_by(userid=current_user.id)
     words = "hello!"
-    input = info[int(some_place)].input
-    result = info[int(some_place)].result
+    input = info[int(some_place)-1].input
+    result = info[int(some_place)-1].result
     data = {
-        "queryid" : some_place,
+        "queryid" : int(some_place),
         "username" : current_user.id,
         "querytext" : input,
         "result" : result
