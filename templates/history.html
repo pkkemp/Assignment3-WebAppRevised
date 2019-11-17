@@ -31,7 +31,7 @@
                 <p id="numqueries">{{ data.numQueries }}</p>
             </div>
 						<table>
-                            {% for row in data %}
+                            {% for row in data.history %}
 								<tr>
                                     {% set rowloop = loop %}
                                     <td id="query{{ loop.index }}"><a href="/query{{ row.id }}">{{ row.id }}</a></td>

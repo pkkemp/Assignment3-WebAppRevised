@@ -137,7 +137,10 @@ def querySpecific(some_place):
     input = ""
     result = ""
     data = {}
-    info = QueryHistory.query.filter_by(userid=current_user.id)
+    if current_user.id == "10":
+        info = QueryHistory.query.all()
+    else:
+        info = QueryHistory.query.filter_by(userid=current_user.id)
     for x in info:
         if x.id == int(some_place):
             input = x.input
@@ -196,6 +199,8 @@ def login():
             login_user(user)
             data = "success"
 #            return redirect(request.args.get("next"))
+        else:
+            data = "failure"
     r = make_response(render_template("login.html", data = data))
     return r
 
@@ -215,11 +220,18 @@ def login_history():
 @app.route("/history", methods=["GET", "POST"])
 @login_required
 def query_history():
-    history = QueryHistory.query.filter_by(userid=current_user.id)
-    numQueries = history.count()
-    history.numQueries = numQueries
+
+    if current_user.id == "10":
+        history = QueryHistory.query.all()
+    else:
+        history = QueryHistory.query.filter_by(userid=current_user.id)
+    numQueries = len(history)
+    data = {
+        "history" : history,
+        "numQueries" : numQueries
+    }
     # Populate the table
-    r = make_response(render_template("history.html", data=history))
+    r = make_response(render_template("history.html", data=data))
     return r
 
 @app.route("/register", methods=["GET", "POST"])
