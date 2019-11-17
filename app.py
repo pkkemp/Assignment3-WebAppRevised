@@ -93,6 +93,9 @@ class User(UserMixin):
 def getUserId(username):
     return Users.query.filter_by(username=username).first().userid
 
+def getUsername(userId):
+    return Users.query.filter_by(userid=userId).first().username
+
 def getUserPassword(username):
     return Users.query.filter_by(username=username).first().password
 
@@ -147,7 +150,7 @@ def querySpecific(some_place):
             result = x.result
             data = {
                 "queryid" : int(some_place),
-                "username" : current_user.id,
+                "username" : getUsername(current_user.id),
                 "querytext" : input,
                 "result" : result
             }
@@ -190,17 +193,20 @@ def login():
         username = request.form['uname']
         password = request.form['pword'].encode('utf-8')
         twofact  = request.form['2fa']
-        hashed = bcrypt.hashpw(password, getUserSalt(username))
-        password = ""
-        if hashed == getUserPassword(username) and twofact == getUserTwoFactor(username):
-            id = getUserId(username)
-            user = User()
-            user.id = id
-            login_user(user)
-            data = "success"
-#            return redirect(request.args.get("next"))
-        else:
-            data = "failure"
+        try:
+            hashed = bcrypt.hashpw(password, getUserSalt(username))
+            password = ""
+            if hashed == getUserPassword(username) and twofact == getUserTwoFactor(username):
+                id = getUserId(username)
+                user = User()
+                user.id = id
+                login_user(user)
+                data = "success"
+        #            return redirect(request.args.get("next"))
+            elif twofact != getUserTwoFactor(username):
+                data = "Two-factor failure"
+        except:
+            data = "Incorrect"
     r = make_response(render_template("login.html", data = data))
     return r
 
@@ -220,12 +226,14 @@ def login_history():
 @app.route("/history", methods=["GET", "POST"])
 @login_required
 def query_history():
-
-    if current_user.id == "10":
-        history = QueryHistory.query.all()
+    if request.method == "POST":
+        if current_user.id == "10":
+            uname = request.form['uname']
+            history = QueryHistory.query.filter_by(userid=getUserId(uname))
+            numQueries = history.count()
     else:
         history = QueryHistory.query.filter_by(userid=current_user.id)
-    numQueries = len(history)
+        numQueries = history.count()
     data = {
         "history" : history,
         "numQueries" : numQueries
