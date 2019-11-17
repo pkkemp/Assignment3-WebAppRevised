@@ -9,7 +9,9 @@ from flask_login import LoginManager, UserMixin, login_required, login_user, cur
 
 import unittest, os
 
-app = Flask(__name__)
+app = Flask(__name__,static_url_path='',
+            static_folder='templates/',
+            template_folder='templates')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sqlite/webapp.db'
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
@@ -121,6 +123,26 @@ def request_loader(request):
 def index():
     return render_template("index.html")
 
+@app.route('/query<some_place>')
+def querySpecific(some_place):
+#    return(HTML_TEMPLATE.substitute(place_name=some_place))
+#     r = make_response(render_template("login.html"))
+#     return r
+    info = QueryHistory.query.filter_by(userid=current_user.id)
+    words = "hello!"
+    input = info[int(some_place)].input
+    result = info[int(some_place)].result
+    data = {
+        "queryid" : some_place,
+        "username" : current_user.id,
+        "querytext" : input,
+        "result" : result
+    }
+    r = make_response(render_template("query.html", data=data))
+    return r
+
+
+
 @app.route('/test')
 @login_required
 def home():
@@ -181,10 +203,12 @@ def login_history():
 @app.route("/history", methods=["GET", "POST"])
 @login_required
 def query_history():
-        history = QueryHistory.query.filter_by(userid=current_user.id)
-        # Populate the table
-        r = make_response(render_template("history.html", data=history))
-        return r
+    history = QueryHistory.query.filter_by(userid=current_user.id)
+    numQueries = history.count()
+    history.numQueries = numQueries
+    # Populate the table
+    r = make_response(render_template("history.html", data=history))
+    return r
 
 @app.route("/register", methods=["GET", "POST"])
 def register():

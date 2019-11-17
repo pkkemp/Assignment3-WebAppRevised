@@ -8,6 +8,7 @@
     <title>Home</title>
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/main.css">
 
     <!-- Optional theme -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
@@ -16,13 +17,17 @@
     <div class="container">
         <div class="row" style="margin-top: 40px">
             <div class="col-sm-6">
-                <ul>
-                    <li class="col-sm-6"><a href="/login" class="btn form-control btn-primary">Login</a></li>
-                    <li class="col-sm-6"><a href="/register" class="btn form-control btn-primary">Register</a></li>
-                </ul>
+            </div>
+						<table>
+								<tr>
+									<td id="query{{ data.queryid }}">{{ data.queryid }}</td>
+                                    <td id="username">{{ data.username }}</td>
+                                    <td id="querytext">{{ data.querytext }}</td>
+                                    <td id="queryresults">{{ data.result }}</td>
+								</tr>
+						</table>
             </div>
         </div>
-    </div>
 
 </body>
 </html>
