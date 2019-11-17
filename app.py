@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_table import Table, Col
 from flask import Flask, Response, redirect, url_for, request, session, abort
 import datetime
+import bcrypt
 import uuid
 from flask_login import LoginManager, UserMixin, login_required, login_user, current_user
 
@@ -38,10 +39,11 @@ class LoginHistoryTable(Table):
 
 
 class user:
-  def __init__(self, username, password, twofactor):
+  def __init__(self, username, password, twofactor, salt):
     self.username = username
     self.password = password
     self.twofactor = twofactor
+    self.salt = salt
 
     # getter method
     def get_username(self):
@@ -80,6 +82,7 @@ class Users(db.Model):
     password = db.Column(db.String(120), unique=False, nullable=False)
     twofactor = db.Column(db.String(80), unique=False, nullable=False)
     userid = db.Column(db.Integer(), unique=True)
+    salt = db.Column(db.String())
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -92,6 +95,9 @@ def getUserId(username):
 
 def getUserPassword(username):
     return Users.query.filter_by(username=username).first().password
+
+def getUserSalt(username):
+    return Users.query.filter_by(username=username).first().salt
 
 def getUserTwoFactor(username):
     return Users.query.filter_by(username=username).first().twofactor
@@ -151,9 +157,9 @@ def home():
 def findUser(user_name):
     return Users.query.filter_by(username=user_name).first()
 
-def createUser(user_name, pword, twofact):
+def createUser(user_name, pword, twofact, salt):
     if findUser(user_name) is None:
-        user = Users(username=user_name, password=pword, twofactor=twofact)
+        user = Users(username=user_name, password=pword, twofactor=twofact, salt=salt)
         db.session.add(user)
         db.session.commit()
         return True
@@ -175,9 +181,11 @@ def login():
     data = ""
     if request.method == 'POST':
         username = request.form['uname']
-        password = request.form['pword']
+        password = request.form['pword'].encode('utf-8')
         twofact  = request.form['2fa']
-        if password == getUserPassword(username) and twofact == getUserTwoFactor(username):
+        hashed = bcrypt.hashpw(password, getUserSalt(username))
+        password = ""
+        if hashed == getUserPassword(username) and twofact == getUserTwoFactor(username):
             id = getUserId(username)
             user = User()
             user.id = id
@@ -214,12 +222,15 @@ def query_history():
 def register():
     if request.method == "POST":
         uname = request.form['uname']
-        pword = request.form['pword']
+        pword = request.form['pword'].encode('utf-8')
         twofact = request.form['2fa']
-        register = user(username=uname, password=pword, twofactor=twofact)
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(pword, salt)
+        pword = ""
+        register = user(username=uname, password=hashed, twofactor=twofact, salt=salt)
         global userList
         success = "Account creation failure"
-        result = createUser(uname, pword, twofact)
+        result = createUser(uname, hashed, twofact, salt)
         if result is True:
             success = "Account creation success"
         r = make_response(render_template("register.html", data=success))
