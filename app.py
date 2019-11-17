@@ -134,16 +134,20 @@ def querySpecific(some_place):
 #    return(HTML_TEMPLATE.substitute(place_name=some_place))
 #     r = make_response(render_template("login.html"))
 #     return r
+    input = ""
+    result = ""
+    data = {}
     info = QueryHistory.query.filter_by(userid=current_user.id)
-    words = "hello!"
-    input = info[int(some_place)-1].input
-    result = info[int(some_place)-1].result
-    data = {
-        "queryid" : int(some_place),
-        "username" : current_user.id,
-        "querytext" : input,
-        "result" : result
-    }
+    for x in info:
+        if x.id == int(some_place):
+            input = x.input
+            result = x.result
+            data = {
+                "queryid" : int(some_place),
+                "username" : current_user.id,
+                "querytext" : input,
+                "result" : result
+            }
     r = make_response(render_template("query.html", data=data))
     return r
 
